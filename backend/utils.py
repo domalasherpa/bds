@@ -8,57 +8,25 @@ import torch
 import numpy as np
 import torchvision.transforms as T
 from yolo import Yolov1
+from PIL import Image
 
 
 '''
+    upper_left_x = box_coords[0] - box_coords[2] / 2
+    upper_left_y = box_coords[1] - box_coords[3] / 2
+    lower_right_x = box_coords[0] + box_coords[2] / 2
+    lower_right_y = box_coords[1] + box_coords[3] / 2
 
-        new_class_label = {
-                0:'Whimbrel'           ,
-                1:'Osprey'             ,
-                2:'Barn Swallow'       ,
-                3:'Ruddy Turnstone'    ,
-                4:'Barn Owl'           ,
-                5:'Horned Lark'        ,
-                6:'Common Raven'       ,
-                7:'House Sparrow'      ,
-                8:'Mallard'            ,
-                9:'American Pipit'     ,
-                10:'Peregrine Falcon',
-                11:'Golden Eagle'
-        }
-
-        upper_left_x = box_coords[0] - box_coords[2] / 2
-        upper_left_y = box_coords[1] - box_coords[3] / 2
-        lower_right_x = box_coords[0] + box_coords[2] / 2
-        lower_right_y = box_coords[1] + box_coords[3] / 2
-
-        rect = patches.Rectangle(
-            (upper_left_x * width, upper_left_y * height),
-            lower_right_x * width,
-            lower_right_y  * height,
-            linewidth=1,
-            edgecolor="r",
-            facecolor="none",
-        )
-
-
-        json format = {
-            prediction: [
-                {
-                    class: new_class_label[box[0]],
-                    confidence: box[1],
-                    box_coords: [upper_left_x, upper_left_y, lower_right_x, lower_right_y]
-                }
-                for box in bboxes
-            ]
-        }
+    rect = patches.Rectangle(
+        (upper_left_x * width, upper_left_y * height),
+        lower_right_x * width,
+        lower_right_y  * height,
+        linewidth=1,
+        edgecolor="r",
+        facecolor="none",
+    )
 '''
-
-def format_prediction_string(image, bboxes):
-    im = np.array(image)
-    height, width, _ = im.shape
-
-    new_class_label = {
+new_class_label = {
         0:'Whimbrel'           ,
         1:'Osprey'             ,
         2:'Barn Swallow'       ,
@@ -73,6 +41,12 @@ def format_prediction_string(image, bboxes):
         11:'Golden Eagle'
     }
 
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
+def format_prediction_string(image, bboxes):
+    im = np.array(image)
+    height, width, _ = im.shape
     json_format = {
         'prediction': [
             {
@@ -81,8 +55,8 @@ def format_prediction_string(image, bboxes):
                 'box_coords': [
                     (box[2] - box[4] / 2) * width, 
                     (box[3] - box[5] / 2) * height, 
-                    (box[2] + box[4] / 2) * width, 
-                    (box[3] + box[5] / 2) * height
+                    (box[2] - box[4] / 2) * width + (box[2] + box[4] / 2) * width, 
+                    (box[3] - box[5] / 2) * height + (box[3] + box[5] / 2) * height
                 ]
             }
             for box in bboxes
@@ -91,20 +65,17 @@ def format_prediction_string(image, bboxes):
     return json_format
 
 def detect(image):
-    # Load model
-    DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-    model = Yolov1(split_size=7, num_boxes=2, num_classes=12).to(DEVICE)
-    optimizer = torch.optim.Adam(model.parameters())  # Replace with actual optimizer used
-    load_checkpoint(torch.load('checkpoint_epoch_200.pth.tar'), model, optimizer)
-    
-    # Prepare input image
+    # PREPROCESSING: Prepare input image
     transform = T.Compose([
         T.Resize((448, 448)),
         T.ToTensor(),
-        # T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    x = transform(image).unsqueeze(0).to(DEVICE)  # Add batch dimension and send to device
+    x = transform(image).unsqueeze(0).to(DEVICE)
+
+    # Load model
+    model = Yolov1(split_size=7, num_boxes=2, num_classes=12).to(DEVICE)
+    optimizer = torch.optim.Adam(model.parameters())
+    load_checkpoint(torch.load('checkpoint_epoch_200.pth.tar', map_location=torch.device('cpu')), model, optimizer)
 
     # Run model
     model.eval()
@@ -112,9 +83,9 @@ def detect(image):
         output = model(x)
     
     # Post-process the output
-    bboxes = cellboxes_to_boxes(output)  # Assuming you have defined cellboxes_to_boxes function
-    
-    bboxes = non_max_suppression(bboxes[0], iou_threshold=0.7, threshold=0.5, box_format="midpoint")
+    bboxes = cellboxes_to_boxes(output)
+    bboxes = non_max_suppression(bboxes[0], iou_threshold=0.8, threshold=0.5, box_format="midpoint")
+
     return format_prediction_string(image, bboxes)
 
 
@@ -140,16 +111,6 @@ def intersection_over_union(boxes_preds, boxes_labels, box_format="midpoint"):
         box2_y1 = boxes_labels[..., 1:2] - boxes_labels[..., 3:4] / 2
         box2_x2 = boxes_labels[..., 0:1] + boxes_labels[..., 2:3] / 2
         box2_y2 = boxes_labels[..., 1:2] + boxes_labels[..., 3:4] / 2
-
-    if box_format == "corners":
-        box1_x1 = boxes_preds[..., 0:1]
-        box1_y1 = boxes_preds[..., 1:2]
-        box1_x2 = boxes_preds[..., 2:3]
-        box1_y2 = boxes_preds[..., 3:4]  # (N, 1)
-        box2_x1 = boxes_labels[..., 0:1]
-        box2_y1 = boxes_labels[..., 1:2]
-        box2_x2 = boxes_labels[..., 2:3]
-        box2_y2 = boxes_labels[..., 3:4]
 
     x1 = torch.max(box1_x1, box2_x1)
     y1 = torch.max(box1_y1, box2_y1)
@@ -245,7 +206,7 @@ def convert_cellboxes(predictions, S=7, C=12):
     return converted_preds
 
 def cellboxes_to_boxes(out, S=7):
-    converted_pred = convert_cellboxes(out.to('cuda')).reshape(out.shape[0], S * S, -1)
+    converted_pred = convert_cellboxes(out.to('cpu')).reshape(out.shape[0], S * S, -1)
     converted_pred[..., 0] = converted_pred[..., 0].long()
     all_bboxes = []
 

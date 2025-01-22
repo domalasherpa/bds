@@ -1,0 +1,161 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div class="min-h-screen flex flex-col items-center text-xl text-slate-600 font-semibold p-20 bg-slate-100 space-y-10">
+        <h1 class="text-3xl">Bird Detection</h1>
+        
+        <h1>Upload an Image for Bird Detection</h1>
+        
+        <div class="border-2 border-slate-600">
+            <input type="file"
+            class="text-gray-500 h-full font-medium text-sm bg-slate-100 file:cursor-pointer cursor-pointer file:border-0 file:py-2 file:px-4 file:mr-4 file:bg-gray-800 file:hover:bg-gray-700 file:text-white" id="imageInput" accept="image/*"/>
+            <button onclick="uploadImage(event)" class="bg-green-400 px-10 py-2">Detect</button>
+        </div>
+        
+        <div class="result flex space-x-2">
+            <img id="previewImage" width="500" />
+            <img id="resultImage" width="500"/>
+        </div>
+        <p id="result"></p>
+    </div>
+
+    <script>
+        async function uploadImage(event) {
+            event.preventDefault();
+            const imageInput = document.getElementById("imageInput");
+            const result = document.getElementById("result");
+            const previewImage = document.getElementById("previewImage");
+            const resultImage = document.getElementById("resultImage");
+
+            resultImage.src = "";
+            result.innerHTML = "";
+
+            if (imageInput.files.length === 0) {
+                alert("Please select an image.");
+                return;
+            }
+
+            const file = imageInput.files[0];
+
+            previewImage.src = URL.createObjectURL(file);
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const res = await fetch("http://127.0.0.1:8000/detect-bird/", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Server error: ${res.statusText}`);
+                }
+
+                const res1 = await res.json();
+
+                
+                resultImage.src = `./${res1.image_path}`;
+
+                result.innerHTML = `<strong>Detection Result:</strong> ${res1.prediction[0]['class']} (Confidence: ${(res1.prediction[0]['confidence']).toFixed(2)}%)`;
+            } catch (error) {
+                result.innerHTML = "No birds Detected !";
+            }
+        }
+    </script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div class="min-h-screen flex flex-col items-center text-xl text-slate-600 font-semibold p-20 bg-slate-100 space-y-10">
+        <h1 class="text-3xl">Bird Detection</h1>
+        
+        <h1>Upload an Image for Bird Detection</h1>
+        
+        <div class="border-2 border-slate-600">
+            <input type="file"
+            class="text-gray-500 h-full font-medium text-sm bg-slate-100 file:cursor-pointer cursor-pointer file:border-0 file:py-2 file:px-4 file:mr-4 file:bg-gray-800 file:hover:bg-gray-700 file:text-white" id="imageInput" accept="image/*"/>
+            <button onclick="uploadImage(event)" class="bg-green-400 px-10 py-2">Detect</button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingIndicator" class="hidden text-center mt-4">
+            <div class="w-12 h-12 border-4 border-t-4 border-gray-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p>Processing...</p>
+        </div>
+    
+        <div class="result flex space-x-2">
+            <img id="previewImage" width="500" />
+            <img id="resultImage" width="500"/>
+        </div>
+
+        <p id="result"></p>
+    </div>
+
+    <script>
+        async function uploadImage(event) {
+            event.preventDefault();
+            const imageInput = document.getElementById("imageInput");
+            const result = document.getElementById("result");
+            const previewImage = document.getElementById("previewImage");
+            const resultImage = document.getElementById("resultImage");
+            const loadingIndicator = document.getElementById("loadingIndicator");
+
+            // Reset previous results
+            resultImage.src = "";
+            result.innerHTML = "";
+
+            // Hide loading indicator initially
+            loadingIndicator.classList.remove("hidden");
+
+            if (imageInput.files.length === 0) {
+                alert("Please select an image.");
+                return;
+            }
+
+            const file = imageInput.files[0];
+            previewImage.src = URL.createObjectURL(file);
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const res = await fetch("http://127.0.0.1:8000/detect-bird/", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Server error: ${res.statusText}`);
+                }
+
+                const res1 = await res.json();
+
+                resultImage.src = `./${res1.image_path}`;
+                result.innerHTML = `<strong>Detection Result:</strong> ${res1.prediction[0]['class']} (Confidence: ${(res1.prediction[0]['confidence']).toFixed(2)}%)`;
+
+            } catch (error) {
+                result.innerHTML = "No birds Detected!";
+            } finally {
+                // Hide loading indicator once done
+                loadingIndicator.classList.add("hidden");
+            }
+        }
+    </script>
+</body>
+</html>
+
