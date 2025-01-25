@@ -43,12 +43,16 @@ async def detect_bird(file: UploadFile = File(...)):
             draw.text((box_coords[0], (box_coords[1])-10), label, fill="red")
 
         # Save the image to a local file
+        root_dir = os.getcwd()
         output_dir = "output_images"
         os.makedirs(output_dir, exist_ok=True)
-        image_path = os.path.join(output_dir, file.filename)
+        image_path = os.path.join(root_dir, output_dir, file.filename)
         image.save(image_path)
 
-        return {"prediction": prediction['prediction'], "image_path": image_path}
+        with open(image_path, "rb") as image_file:
+            encoded_image = base64.b64encode(image_file.read()).decode('utf-8')
+
+        return {"prediction": prediction['prediction'], "image": encoded_image, "filename": file.filename}
 
     except Exception as e:
         print(f"Error: {e}")

@@ -1,4 +1,5 @@
 <script setup>
+const {loggedIn} = useUserSession()
 const isOpen = ref(false);
 const route = useRoute();
 const links = [
@@ -50,9 +51,12 @@ watch(route, () => {
             How It Works</NuxtLink>
           <NuxtLink to="#team" class="text-white hover:bg-blue-700 px-4 py-2 rounded-md transition duration-300">Team
           </NuxtLink>
-          <UButton to="/login"
+          <NuxtLink v-if="loggedIn" to="/predictBird#detect-bird" class="text-white hover:bg-blue-700 px-4 py-2 rounded-md transition duration-300">Detect
+          </NuxtLink>
+            <UButton v-if="!loggedIn" to="/login"
             class="text-white bg-yellow-400 hover:bg-yellow-500 px-6 py-2 rounded-md transition duration-300 font-semibold">
             Login</UButton>
+            <UButton v-if="loggedIn" @click="handleLogout" class="text-white bg-yellow-400 hover:bg-yellow-500 px-6 py-2 rounded-md transition duration-300 font-semibold">LogOut</UButton>
         </div>
 
         <USlideover v-model="isOpen" class="xl:hidden">
@@ -94,10 +98,6 @@ watch(route, () => {
           <NuxtLink to="/register"
             class="bg-yellow-400 text-blue-600 font-semibold py-3 px-6 rounded-lg text-xl hover:bg-yellow-500 transition duration-300">
             Try It Now
-          </NuxtLink>
-          <NuxtLink to="#learn-more"
-            class="bg-transparent border-2 border-white text-white font-semibold py-3 px-6 rounded-lg text-xl hover:bg-white hover:text-blue-600 transition duration-300">
-            Learn More
           </NuxtLink>
         </div>
       </div>
@@ -190,23 +190,3 @@ watch(route, () => {
     </footer>
   </div>
 </template>
-
-<script>
-export default {
-  data() {
-    return {
-      backgroundImage: '/public/heroBird.jpg', // Replace with actual image URL
-      isMenuOpen: false,
-    };
-  },
-  methods: {
-    toggleMenu() {
-      this.isMenuOpen = !this.isMenuOpen;
-    }
-  }
-};
-</script>
-
-<style scoped>
-/* Add custom styles here if necessary */
-</style>

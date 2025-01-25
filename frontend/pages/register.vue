@@ -28,7 +28,7 @@ async function handleRegister(){
       title: 'Success',
       description: 'successfully registered',
     })
-    navigateTo('/predictBird')
+    window.location.href = '/predictBird#detect-bird'
   }
   catch (err) {
     toast.add({

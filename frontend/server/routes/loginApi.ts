@@ -28,5 +28,4 @@ export default defineEventHandler(async(event)=>{
             username: userExists.username
         }})
 
-    return sendRedirect(event, '/')
 })

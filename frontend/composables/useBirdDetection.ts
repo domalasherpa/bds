@@ -14,9 +14,10 @@ export default function useBirdDetection() {
     }
   }
 
+
   // Method to handle image upload and detection
   const uploadImage = async (file: string | Blob) => {
-    if (!file) {
+    if (!(file instanceof Blob) || !file.type.startsWith('image/')) {
       alert("Please select an image.")
       return
     }
@@ -30,16 +31,16 @@ export default function useBirdDetection() {
 
     try {
       // API call to backend for bird detection using $fetch
-      const data = await $fetch<{ image_path: string, prediction: { class: string, confidence: number }[] }>('/detect-bird/', {
+      const data = await $fetch<{ image_path: string, prediction: { class: string, confidence: number }[] }>('/api/detect-bird/', {
         method: 'POST',
         body: formData
       })
 
       // Set result image and text
-      resultImage.value = `./${data.image_path}`
+      resultImage.value = `${data.image_path}`
       resultText.value = `<strong>Detection Result:</strong> ${data.prediction[0]['class']} (Confidence: ${(data.prediction[0]['confidence']).toFixed(2)}%)`
     } catch (error) {
-      resultText.value = 'No birds Detected!'
+      resultText.value = 'No trained bird detected. Please try again with a different image.'
     } finally {
       loading.value = false
     }

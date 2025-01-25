@@ -1,9 +1,12 @@
 <script setup>
 import { LoginSchema } from '~/shared';
 const {loggedIn} = useUserSession()
+
 if (loggedIn.value) {
   navigateTo('/predictBird')
 }
+
+const router = useRouter()
 const user = ref({
   username: '',
   password: '',
@@ -12,7 +15,6 @@ const user = ref({
 const toast = useToast()
 async function handleLogin(){
   try {
-    console.log(user.value)
       const res = await $fetch('/loginApi', {
         method: 'POST',
         body: JSON.stringify({
@@ -24,7 +26,7 @@ async function handleLogin(){
         title: 'Success',
         description: 'successfully logged in',
       })
-      navigateTo('/predictBird')
+      window.location.href = '/predictBird#detect-bird'
     }
     catch (err) {
       toast.add({
