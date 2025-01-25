@@ -1,0 +1,11 @@
+{
+    "dialect": "sqlite",
+    "out": "./server/db/migrations",
+    "schema": "./server/db/schema.ts",
+    "dbCredentials": {
+      "url": "./server/db/db.sqlite"
+    },
+  
+    "verbose": true,
+    "strict": true
+  }
